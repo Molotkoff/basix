@@ -4,36 +4,96 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Basix.Builder.Expression;
+using Basix.Interpreter.Commands;
+using Basix.Interpreter;
+using Basix.Util.Segment;
 
 namespace Basix.Types
 {
     public class BxTypes
     {
-        private Dictionary<string, BxType> values = new Dictionary<string, BxType>();
-
-        private ExpressionCommands[][] casts;
-
-        public BxType this[string name]
+        public class BxTypesBuilder
         {
-            get => values[name];
+            internal List<Command> Declaration { get; private set; }
+
+            private BxTypes bxTypes;
+            private int nextIndex;
+
+            public BxTypesBuilder(BxTypes types, BxType parent, int requiredSize)
+            {
+                this.bxTypes = types;
+                this.Declaration = new List<Command>();
+                this.nextIndex = 0;
+
+                var sizeCommandArgs = new List<byte>();
+                sizeCommandArgs.Add((byte)InterpreterFlag.SIZE);
+                sizeCommandArgs.AddRange(BitConverter.GetBytes(requiredSize));
+
+                var sizeCommand = new Command(CommandType.NO, sizeCommandArgs.ToArray());
+                Declaration.Add(sizeCommand);
+                this.nextIndex += Interpreter.Util.Util.CommandToBytes(sizeCommand).Length;
+
+                var parentDeclaration = new List<byte>();
+
+                if (parent != null)
+                {
+                    parentDeclaration.Add((byte)InterpreterFlag.PARENT);
+                    parentDeclaration.AddRange(BitConverter.GetBytes(parentIndex));
+                }
+                else
+                    parentDeclaration.Add((byte)InterpreterFlag.NO_PARENT);
+
+                var declaration = new Command(CommandType.NO, parentDeclaration.ToArray());
+                Declaration.Add(declaration);
+                this.nextIndex += Interpreter.Util.Util.CommandToBytes(declaration).Length;
+            }
+
+            public int AddOperation(string name, IEnumerable<Command> commands)
+            {
+                var operationIndex = nextIndex;
+                var commandsAsBytes = Interpreter.Util.Util.CommandsToBytes(commands);
+
+                this.Declaration.AddRange(commands);
+                this.nextIndex += commandsAsBytes.Length;
+
+                return operationIndex;
+            }
+
+            public BxType Build()
+            {
+                return new BxType(this.index, Declaration);
+            }
         }
+
+        public const string NONE = "NONE";
+        public const string INTEGER = "INTEGER";
+        public const string BYTE = "BYTE";
+        public const string SHORT = "SHORT";
+        public const string FLOAT = "FLOAT";
+
+        private Segment<BxType> typeSegment;
 
         public BxTypes()
         {
-            expressions
-            //generate standard types
+            this.typeSegment = new Segment<BxType>();
 
-            values.Add("NONE", new BxType(0));
-            values.Add("BYTE", new BxType(1));
-            values.Add("INTEGER", new BxType(4));
-            values.Add("FLOAT", new BxType(4, 1));
+            AddNone();
+            AddInteger();
         }
 
-        public BxType Add(string name, int size, int parent) 
+        public BxTypesBuilder Add(string name, BxType parent)
+        {
+            
+        }
+
+        private void AddNone()
         {
 
         }
 
-        public BxType Find(string name) => values[name];
+        private void AddInteger()
+        {
+
+        }
     }
 }

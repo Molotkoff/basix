@@ -9,6 +9,7 @@ namespace Basix.Interpreter.Commands
     public enum CommandType : byte
     {
         NONE,
+        NO, // means that interpreter will not add it to bytes
 
         PUSH_STACK_INTEGER,
         POP_STACK_INTEGER,
@@ -24,10 +25,13 @@ namespace Basix.Interpreter.Commands
         MUL_FLOAT,
         DIV_FLOAT,
 
-        PUSH_SPAN,
+        //when we deal with group of bytes (etc complex types)
+
+        PUSH_SPAN, 
         POP_SPAN,
 
-        GOTO,
+        GOTO_SEGMENT,
+        GOTO_ABSOLUTE,
         RET
     }
 }
