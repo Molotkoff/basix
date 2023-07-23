@@ -12,12 +12,14 @@ namespace Basix.Types
     public class BxType : ISegment
     {
         public BxType Parent { get; private set; }
-        public IEnumerable<Command> Declaration { get; private set; }
+        public IEnumerable<Command> Declaration => Members.All(member => member.Declaration);
 
-        public BxType(BxType parent, IEnumerable<Command> declaration)
+        public Segment<BxTypeMember> Members { get; private set; }
+
+        public BxType(BxType parent, Segment<BxTypeMember> members)
         {
             this.Parent = parent;
-            this.Declaration = declaration;
+            this.Members = members;
         }
 
         public int Length()

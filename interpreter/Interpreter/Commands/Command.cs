@@ -22,5 +22,12 @@ namespace Basix.Interpreter.Commands
             this.Type = type;
             this.args = args;
         }
+
+        public Command(CommandType type, IEnumerable<byte> args)
+        {
+            this.Type = type;
+            this.args = args.ToArray();
+        }
+
     }
 }

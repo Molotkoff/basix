@@ -14,55 +14,50 @@ namespace Basix.Types
     {
         public class BxTypesBuilder
         {
-            internal List<Command> Declaration { get; private set; }
+            private BxType me;
+            private Segment<BxTypeMember> members;
 
-            private BxTypes bxTypes;
-            private int nextIndex;
-
-            public BxTypesBuilder(BxTypes types, BxType parent, int requiredSize)
+            public BxTypesBuilder(BxTypes types, BxType parent, string name, int requiredSize)
             {
-                this.bxTypes = types;
-                this.Declaration = new List<Command>();
-                this.nextIndex = 0;
-
-                var sizeCommandArgs = new List<byte>();
-                sizeCommandArgs.Add((byte)InterpreterFlag.SIZE);
-                sizeCommandArgs.AddRange(BitConverter.GetBytes(requiredSize));
-
-                var sizeCommand = new Command(CommandType.NO, sizeCommandArgs.ToArray());
-                Declaration.Add(sizeCommand);
-                this.nextIndex += Interpreter.Util.Util.CommandToBytes(sizeCommand).Length;
+                this.members = new Segment<BxTypeMember>();
 
                 var parentDeclaration = new List<byte>();
 
                 if (parent != null)
                 {
                     parentDeclaration.Add((byte)InterpreterFlag.PARENT);
-                    parentDeclaration.AddRange(BitConverter.GetBytes(parentIndex));
+                    parentDeclaration.AddRange(BitConverter.GetBytes(types.typeSegment.IndexOfSegment(parent)));
                 }
                 else
                     parentDeclaration.Add((byte)InterpreterFlag.NO_PARENT);
 
-                var declaration = new Command(CommandType.NO, parentDeclaration.ToArray());
-                Declaration.Add(declaration);
-                this.nextIndex += Interpreter.Util.Util.CommandToBytes(declaration).Length;
+                var declaration = new Command(CommandType.NO, parentDeclaration);
+                this.members.Add(BxTypeMember.PARENT, new BxTypeMember(new[] { declaration }));
+
+                var sizeCommandArgs = new List<byte>();
+                sizeCommandArgs.Add((byte)InterpreterFlag.SIZE);
+                sizeCommandArgs.AddRange(BitConverter.GetBytes(requiredSize));
+
+                var sizeCommand = new Command(CommandType.NO, sizeCommandArgs.ToArray());
+
+                this.members.Add(BxTypeMember.SIZE, new BxTypeMember(new[] { sizeCommand }));
+
+                this.me = new BxType(parent, members);
+                types.typeSegment.Add(name, me);
             }
 
-            public int AddOperation(string name, IEnumerable<Command> commands)
+            public BxTypesBuilder AddMember(string name, IEnumerable<Command> commands)
             {
-                var operationIndex = nextIndex;
-                var commandsAsBytes = Interpreter.Util.Util.CommandsToBytes(commands);
-
-                this.Declaration.AddRange(commands);
-                this.nextIndex += commandsAsBytes.Length;
-
-                return operationIndex;
+                this.members.Add(name, new BxTypeMember(commands));
+                return this;
             }
 
-            public BxType Build()
+            public BxTypesBuilder AddMember(string name, Command command)
             {
-                return new BxType(this.index, Declaration);
+                return AddMember(name, new[] { command });
             }
+
+            public BxType Build() => me;
         }
 
         public const string NONE = "NONE";
@@ -78,22 +73,27 @@ namespace Basix.Types
             this.typeSegment = new Segment<BxType>();
 
             AddNone();
-            AddInteger();
+            Add4BytesInteger();
         }
 
-        public BxTypesBuilder Add(string name, BxType parent)
+        public BxTypesBuilder Add(string name, BxType parent, int dataSize)
         {
-            
+            return new BxTypesBuilder(this, parent, name, dataSize);
         }
 
         private void AddNone()
         {
-
+            Add(NONE, null, 0).Build();
         }
 
-        private void AddInteger()
+        private void Add4BytesInteger()
         {
-
+            Add(INTEGER, null, 4)
+           .AddMember(CommandType.ADD_INTEGER.ToString(), new Command(CommandType.ADD_INTEGER))
+           .AddMember(CommandType.MIN_INTEGER.ToString(), new Command(CommandType.MIN_INTEGER))
+           .AddMember(CommandType.MUL_INTEGER.ToString(), new Command(CommandType.MUL_INTEGER))
+           .AddMember(CommandType.DIV_INTEGER.ToString(), new Command(CommandType.DIV_INTEGER))
+           .Build();
         }
     }
 }

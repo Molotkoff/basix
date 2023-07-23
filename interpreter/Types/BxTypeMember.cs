@@ -3,18 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Basix.Util.Segment;
+using Basix.Interpreter.Commands;
+using Basix.Interpreter.Util;
 
 namespace Basix.Types
 {
-    public struct BxTypeMember
+    public class BxTypeMember : ISegment
     {
-        public int Index { get; private set; }
-        public int Length { get; private set; }
+        public IEnumerable<Command> Declaration { get; private set; }
 
-        public BxTypeMember(int index, int length)
+        public const string PARENT = "PARENT";
+        public const string SIZE   = "SIZE";
+
+        public BxTypeMember(IEnumerable<Command> declaration)
         {
-            this.Index = index;
-            this.Length = length;
+            this.Declaration = declaration;
+        }
+
+        public int Length()
+        {
+            return Interpreter.Util.Util.CommandsLength(Declaration);
         }
     }
 }

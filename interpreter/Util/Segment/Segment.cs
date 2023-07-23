@@ -42,7 +42,7 @@ namespace Basix.Util.Segment
             this.named = new Dictionary<string, NamedSegment>();
         }
 
-        public void Add(T segment, string name)
+        public void Add(string name, T segment)
         {
             var namedSegment = new NamedSegment(segments.Count, segment);
             
@@ -60,6 +60,26 @@ namespace Basix.Util.Segment
                 index += segments[i].Length();
 
             return index;
+        }
+
+        public int IndexOfSegment(T segment)
+        {
+            foreach (var candidate in named)
+                if (candidate.Value.Value.Equals(segment))
+                    return IndexOfSegment(candidate.Key);
+
+            throw new Exception("No found segment ");
+        }
+
+
+        public IEnumerable<R> All<R>(Func<T, IEnumerable<R>> productor)
+        {
+            var all = new List<R>();
+
+            foreach (var segment in segments)
+                all.AddRange(productor(segment));
+
+            return all;
         }
     }
 }
